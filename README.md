@@ -9,7 +9,7 @@ Es nutzt **OpenAI** (GPT-4o, TTS) und **Google Gemini** (gemini-3-pro) parallel,
 - **🧠 Dual-LLM Generierung**: Kombiniert die Stärken von OpenAI und Gemini für maximale Qualität.
 - **📚 Zwei Lern-Modi**:
   - `Standard`: Für Konzepte, Modelle und Theorien.
-  - `Quantitativ`: Für Formeln, Rechnungen und Statistik (mit Rechenwegen!).
+  - `Quantitativ`: Für Formeln, Rechnungen und Statistik (mit Rechenwegen!). (Nicht für Audiozusammenfassungen geeignet)
 - **🎧 Audio-Erklärungen**: Generiert natürliche, podcast-artige Erklärungen zu jeder Karte (TTS).
 - **🎛️ Interaktive CLI**: Einfache Bedienung ohne komplexe Befehle.
 - **🔄 Anki-Import**: Exportiert direkt als TSV für den Import in Anki (HTML-formatiert).
@@ -35,6 +35,8 @@ Es nutzt **OpenAI** (GPT-4o, TTS) und **Google Gemini** (gemini-3-pro) parallel,
    ```
 
 ## Nutzung
+
+> **Wichtig:** Kopiere deine PDF-Datei am besten direkt in diesen Ordner, damit das Skript sie einfach findet.
 
 Starte das Tool interaktiv:
 
