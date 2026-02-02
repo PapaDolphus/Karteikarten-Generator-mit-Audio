@@ -1,0 +1,28 @@
+# Environment variables (SICHERHEITSKRITISCH)
+.env
+.env.local
+
+# Python compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Output files (generated content)
+*.mp3
+*_audio/
+*.tsv
+stimmen_test/
+
+# Input files (should probably not be in git)
+*.pdf
+
+# OS specific files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Editor directories
+.idea/
+.vscode/
+*.swp
