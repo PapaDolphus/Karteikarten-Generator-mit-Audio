@@ -1,88 +1,146 @@
-# Flashcard Content Engine 🎓🎬
+# 🎓 AI Flashcard Generator & Audio Tutor
 
-Turn your study flashcards (TSV files) into engaging multimedia content automatically using AI. 
+Dies ist ein leistungsstarkes Tool-Set, das **Vorlesungsunterlagen (PDFs)** automatisch in hochwertige **Anki-Karteikarten** verwandelt und zusätzlich natürliche, podcast-artige **Audio-Erklärungen** (Tutor-style) generiert.
 
-## What does this project do?
-This tool is a complete pipeline processing learning materials into two formats:
-1.  **Audio Explanations** 🎧: Natural, podcast-style audio explanations of your flashcards (using OpenAI TTS).
-2.  **Viral Video Shorts** 📱: Dynamic YouTube Shorts/TikToks with synchronized text, animations, and "karaoke" subtitles (using Remotion).
-
-## Features
-- **Smart Transformation**: Turns rigid Q&A into conversational explanations suitable for listening.
-- **Viral Aesthetic**: Dynamic backgrounds, spring animations, and engaging typography for video.
-- **Semantic Sync**: Visuals align perfectly with spoken keywords in the video.
-- **Batch Processing**: Process hundreds of cards at once.
-
-## Prerequisites
-- **Python 3.8+**
-- **Node.js 16+** & **npm**
-- **FFmpeg** (required by Remotion)
-- **OpenAI API Key** (for Text-to-Speech and Whisper)
-
-## Installation
-
-1. **Clone the repository**:
-   ```bash
-   git clone <your-repo-url>
-   cd <repo-name>
-   ```
-
-2. **Python Setup**:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
-
-3. **Node.js (for Video) Setup**:
-   ```bash
-   cd video-generator
-   npm install
-   cd ..
-   ```
-
-4. **Environment Variables**:
-   Create a `.env` file in the root directory:
-   ```env
-   OPENAI_API_KEY=sk-your-api-key-here
-   ```
-
-## Usage
-
-You can use the tool for just audio, or for full video generation.
-
-### 🎧 Mode 1: Audio Only
-Great for learning on the go (Podcast style).
-
-```bash
-# Generate audio files for all cards in a TSV
-python3 audio_generator.py "your_cards.tsv" --output "./my_audio_files" --voice nova
-```
-*Options:* `--voice` (alloy, echo, fable, onyx, nova, shimmer)
+Es kombiniert die Stärken von **OpenAI (GPT-4o)** und **Google Gemini** für maximale Qualität.
 
 ---
 
-### 🎬 Mode 2: Video Generation
-Generates vertical videos for Social Media (YouTube Shorts, TikTok, Reels).
+## ✨ Features
 
-**Step 1. Generate Assets (Audio + Data)**
-This command creates the audio, transcribes it, and aligns the visuals.
+### 🧠 Intelligente Generierung
+- **Dual-LLM Strategie**: Nutzt OpenAI und Google Gemini parallel für robustere Ergebnisse.
+- **Kontext-Verständnis**: Extrahiert Kapitelstrukturen aus PDFs für thematisch saubere Karten.
+- **Zwei Lern-Modi**:
+  - `Standard`: Fokus auf Konzepte, Definitionen, Modelle (BWL, Theorie).
+  - `Quantitativ`: Fokus auf Rechenwege, Formeln und Statistik (mit Schritt-für-Schritt Lösungen).
+
+### 🎧 Audio-Tutor (Learning on the go)
+- **Natürliche Sprache**: Verwandelt trockene Karteikarten in lockere Erklärungen ("Lass uns mal das Kano-Modell anschauen...").
+- **High-Quality TTS**: Nutzt OpenAI's HD-Stimmen (Alloy, Echo, Nova, etc.).
+- **Resume-Funktion**: Abgebrochene Generierung kann nahtlos fortgesetzt werden.
+
+### 🛠️ Flexibilität
+- **Interaktiver Modus**: Einfaches Menü für alle Einstellungen.
+- **CLI-Power**: Volle Kontrolle über Kommandozeilen-Argumente für Automatisierung.
+- **Video-Pipeline (Beta)**: Experimentelle Unterstützung für Remotion-Video-Erstellung.
+
+---
+
+## 🚀 Installation
+
+### 1. Repository Klonen
 ```bash
-python3 video_pipeline.py --tsv "your_cards.tsv" --compilation
+git clone https://github.com/dein-user/karteikarten-generator.git
+cd karteikarten-generator
 ```
-*Tip: You can use `--audio-dir "my_audio_files"` if you already generated audio in Mode 1.*
 
-**Step 2. Render Video**
-Render the full compilation video using Remotion.
+### 2. Abhängigkeiten installieren
+Nutze das Setup-Skript (empfohlen für Mac/Linux):
 ```bash
-cd video-generator
-npx remotion render src/index.ts CompilationVideo out/final_video.mp4 --concurrency=4
+./setup.sh
+```
+*Oder manuell:* `pip install -r requirements.txt`
+
+### 3. API-Keys konfigurieren
+Erstelle eine Datei namens `.env` im Hauptverzeichnis:
+
+```env
+OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxx
+GOOGLE_API_KEY=AIzaSyDxxxxxxxxxxxxxxxxx
+```
+*(Die `.gitignore` sorgt dafür, dass diese Datei nicht veröffentlicht wird.)*
+
+---
+
+## 🎮 Nutzung (Quick Start)
+
+Der einfachste Weg ist der **Interaktive Modus**. Lege dein PDF in den Ordner und starte:
+
+```bash
+python3 main.py vorlesung.pdf -i
 ```
 
-## Project Structure
-- `audio_generator.py`: **Core Audio Logic**. Handles prompt engineering for natural explanations and TTS.
-- `video_pipeline.py`: **Video Orchestration**. Handles transcription (Whisper), semantic alignment, and data prep for Remotion.
-- `video-generator/`: **Frontend**. React/Remotion project that defines the visual style, animations, and rendering logic.
+Das Skript führt dich durch alle Schritte:
+1.  **Modus wählen** (Standard vs. Quantitativ)
+2.  **KI wählen** (Beide, nur OpenAI oder nur Gemini)
+3.  **Menge begrenzen** (Optional, z.B. nur 50 Karten)
+4.  **Audio** aktivieren & Stimme wählen
 
-## License
-MIT
+---
+
+## 🤓 Experten-Modus (CLI Referenz)
+
+Du kannst alle Optionen auch direkt übergeben:
+
+### Grundbefehle
+```bash
+# Standard-Generierung
+python3 main.py script.pdf
+
+# Mathe-Modus & nur Gemini nutzen
+python3 main.py statistik.pdf --mode quantitative --provider gemini
+
+# Limitieren auf ca. 30 Karten (testweise)
+python3 main.py script.pdf --max-cards 30
+```
+
+### Audio-Generator Tools
+Falls du schon eine TSV-Datei hast (z.B. `final_karteikarten.tsv`) und nur Audios willst:
+
+```bash
+# Audios generieren
+python3 audio_generator.py final_karteikarten.tsv --voice nova
+
+# Fortsetzen ab Karte 51 (Resume nach Abbruch)
+python3 audio_generator.py final_karteikarten.tsv --start 51
+```
+
+### Verfügbare Argumente (`main.py`)
+| Argument | Beschreibung |
+|---|---|
+| `-i`, `--interactive` | Startet das interaktive Menü |
+| `-m`, `--mode` | `standard` oder `quantitative` |
+| `--provider` | `openai`, `gemini` oder `both` |
+| `--max-cards` | Ungefähres Limit für die Gesamtanzahl |
+| `--voice` | TTS-Stimme (`alloy`, `echo`, `fable`, `onyx`, `nova`, `shimmer`) |
+| `--audio` | Aktiviert Audio-Generierung direkt nach Kartenerstellung |
+
+---
+
+## 📥 Import in Anki
+
+Um die generierten Karten (`.tsv` Datei) in Anki zu nutzen:
+
+1.  Öffne **Anki** am PC/Mac.
+2.  Klicke auf **Datei** -> **Importieren**.
+3.  Wähle die generierte `.tsv` Datei aus.
+4.  **WICHTIG:** Stelle sicher, dass "HTML in Feldern zulassen" aktiviert ist.
+5.  Zuweisung der Felder:
+    - Feld 1 -> Vorderseite (Frage)
+    - Feld 2 -> Rückseite (Antwort)
+6.  Klicke auf **Importieren**.
+
+*Tipp für Audio:* Kopiere die generierten `.mp3` Dateien in deinen Anki-Medienordner, wenn du sie direkt in Anki verknüpfen willst (aktuell sind die Audios für die Nutzung als "Podcast" gedacht).
+
+---
+
+## 📂 Projektstruktur
+
+- **`main.py`**: Der "Chef". Steuert den Ablauf, ruft Parser und KIs auf.
+- **`llm_clients.py`**: Enthält die Logik für OpenAI und Gemini (Prompts, API-Calls).
+- **`pdf_parser.py`**: Zerlegt PDFs intelligent in Kapitel (erkennt Überschriften).
+- **`audio_generator.py`**: Spezialist für Text-zu-Sprache Transformation.
+- **`tsv_exporter.py`**: Speichert die Ergebnisse als Anki-kompatible Datei.
+- **`video_pipeline.py` (Beta)**: Erstellt JSON-Daten für automatisierte Lernvideos.
+
+---
+
+## ⚠️ Bekannte Hinweise
+
+- **PDF-Qualität**: Das Tool funktioniert am besten mit "echten" PDFs (Text markierbar). Eingescannte Bilder funktionieren nicht ohne OCR.
+- **Kosten**: Die Nutzung der APIs (besonders GPT-4o und TTS-1-HD) kostet Geld. Behalte dein OpenAI/Google Guthaben im Blick.
+
+## 📜 Lizenz
+
+MIT License - Feel free to fork and modify!
