@@ -27,5 +27,13 @@ stimmen_test/
 .vscode/
 *.swp
 
-# Video Generator
-video-generator/
+# Video Generator (Source Code allowed, generated files ignored)
+video-generator/node_modules/
+video-generator/out/
+video-generator/public/*.mp3
+video-generator/src/*.json
+!video-generator/src/compilation.json.example
+video-generator/.remotion/
+
+# Keep the directory structure
+!video-generator/

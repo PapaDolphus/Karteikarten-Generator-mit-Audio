@@ -188,10 +188,10 @@ class VideoPipeline:
         print(f"  ✅ Data saved to {json_path}")
         return json_path, audio_path
 
-    def produce_compilation_data(self, tsv_path: str, audio_dir: str, output_path: str):
+    def produce_compilation_data(self, tsv_path: str, audio_dir: str, output_path: str, prefix: str = "karte"):
         """
         Generates a single JSON file containing data for ALL cards in the TSV.
-        Matches TSV rows to 'karte_XXX' audio files.
+        Matches TSV rows to '{prefix}_XXX' audio files.
         """
         import csv
         
@@ -205,17 +205,25 @@ class VideoPipeline:
         print(f"📦 Processing {len(rows)} cards for compilation...")
         
         # 2. Get Audio Files
-        audio_files = sorted([f for f in os.listdir(audio_dir) if f.startswith("karte_") and f.endswith(".mp3")])
+        # Relaxed matching: verify prefix and extraction of ID
+        all_files = sorted([f for f in os.listdir(audio_dir) if f.endswith(".mp3") and f.startswith(prefix)])
         
-        # Map karte_XXX to filename
+        # Map ID to filename
         audio_map = {}
-        for af in audio_files:
+        for af in all_files:
             try:
-                # Extract number "karte_001_..." -> 1
-                num_part = af.split("_")[1]
+                # Expected format: prefix_001_...
+                # Remove prefix
+                rest = af[len(prefix):] # e.g. "_001_title.mp3"
+                if rest.startswith("_") or rest.startswith("-"):
+                     rest = rest[1:] # "001_title.mp3"
+                
+                # Extract number until next separator
+                num_part = re.split(r'[_\-\.]', rest)[0]
                 idx = int(num_part)
                 audio_map[idx] = af
-            except:
+            except Exception as e:
+                # print(f"Skipping file {af}: {e}")
                 continue
                 
         # 3. Iterate
@@ -234,7 +242,7 @@ class VideoPipeline:
                 # Construct expected filename if missing
                 print(f"⚠️ Warning: No audio found for Card {idx}, generating...")
                 safe_name = self.audio_gen._sanitize_filename(question[:50])
-                audio_filename = f"karte_{idx:03d}_{safe_name}.mp3"
+                audio_filename = f"{prefix}_{idx:03d}_{safe_name}.mp3"
                 
             audio_path = os.path.join(audio_dir, audio_filename)
             
@@ -306,6 +314,8 @@ if __name__ == "__main__":
     parser.add_argument("--answer", help="Flashcard answer")
     parser.add_argument("--tsv", help="Path to TSV file")
     parser.add_argument("--out", default="./video-assets", help="Output directory")
+    parser.add_argument("--audio-dir", default="audio_output", help="Directory for source/generated audio files")
+    parser.add_argument("--prefix", default="karte", help="Filename prefix (default: karte)")
     parser.add_argument("--compilation", action="store_true", help="Generate compilation from TSV")
     
     args = parser.parse_args()
@@ -317,7 +327,7 @@ if __name__ == "__main__":
         # But we need to use the files mapped from audio_output. 
         # Actually pipeline.transcribe needs absolute path or relative to CWD.
         # We copied them to video-generator/public/ but for transcription we can read from audio_output/
-        pipeline.produce_compilation_data(args.tsv, "audio_output", "video-generator/src/compilation.json")
+        pipeline.produce_compilation_data(args.tsv, args.audio_dir, "video-generator/src/compilation.json", args.prefix)
         
     elif args.tsv:
         # Read first valid line from TSV
