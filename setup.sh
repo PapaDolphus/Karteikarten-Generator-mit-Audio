@@ -1,9 +1,7 @@
 #!/bin/bash
 # Setup-Skript für Karteikarten-Generator
 # 
-# Da der Ordnerpfad einen Doppelpunkt enthält (WiSe25:26), kann kein 
-# virtuelles Environment direkt erstellt werden. Dieses Skript installiert
-# die Abhängigkeiten mit --user Flag.
+
 
 echo "🔧 Karteikarten-Generator Setup"
 echo "================================"

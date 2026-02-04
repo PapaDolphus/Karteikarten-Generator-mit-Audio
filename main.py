@@ -28,31 +28,37 @@ from audio_generator import AudioGenerator
 
 def process_section(section_title: str, section_content: str, 
                     openai_client: OpenAIClient, gemini_client: GeminiClient,
-                    mode: str = "standard") -> List[Dict[str, str]]:
+                    mode: str = "standard", provider: str = "both", limit: int = None) -> List[Dict[str, str]]:
     """
-    Verarbeitet einen Abschnitt mit beiden LLMs parallel.
+    Verarbeitet einen Abschnitt mit den gewählten LLMs.
     
     Args:
         section_title: Überschrift des Abschnitts
         section_content: Inhalt des Abschnitts
         openai_client: OpenAI Client
         gemini_client: Gemini Client
-        mode: Modus für die Generierung ("standard" oder "quantitative")
-        
-    Returns:
-        Kombinierte Liste von Karteikarten
+        mode: Modus für die Generierung
+        provider: 'openai', 'gemini' oder 'both'
+        limit: Maximale Anzahl Karten (pro LLM)
     """
     print(f"  📝 Generiere Karteikarten für: {section_title[:50]}...")
     
     openai_cards = []
     gemini_cards = []
     
-    # Parallel mit beiden APIs
+    # LLM-Aufrufe parallel planen
     with ThreadPoolExecutor(max_workers=2) as executor:
-        futures = {
-            executor.submit(openai_client.generate_flashcards, section_title, section_content, mode): "openai",
-            executor.submit(gemini_client.generate_flashcards, section_title, section_content, mode): "gemini"
-        }
+        futures = {}
+        
+        if provider in ["openai", "both"]:
+            # Bei Single-Provider und gesetztem Limit: Volles Limit nutzen
+            # Bei "both": Limit pro LLM, später kombinieren
+            p_limit = limit
+            futures[executor.submit(openai_client.generate_flashcards, section_title, section_content, mode, p_limit)] = "openai"
+            
+        if provider in ["gemini", "both"]:
+            p_limit = limit
+            futures[executor.submit(gemini_client.generate_flashcards, section_title, section_content, mode, p_limit)] = "gemini"
         
         for future in as_completed(futures):
             api_name = futures[future]
@@ -112,6 +118,12 @@ Umgebungsvariablen:
                         choices=["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
                         default="nova",
                         help="TTS-Stimme für Audio (Standard: nova)")
+    parser.add_argument("--provider",
+                        choices=["openai", "gemini", "both"],
+                        default="both",
+                        help="Welche KI verwendet werden soll (Standard: both)")
+    parser.add_argument("--max-cards", type=int,
+                        help="Ungefähre Obergrenze für die Anzahl der Karteikarten")
     parser.add_argument("-i", "--interactive", action="store_true",
                         help="Interaktiver Modus: Fragt Einstellungen beim Start ab")
     
@@ -147,7 +159,31 @@ Umgebungsvariablen:
                 args.mode = "quantitative"
                 break
                 
-        # 2. Audio abfragen
+        # 2. KI-Auswahl (Provider)
+        print("\nWelche KI soll verwendet werden?")
+        print("  1) Beide (Empfohlen für beste Qualität)")
+        print("  2) Nur OpenAI (GPT-4o)")
+        print("  3) Nur Google Gemini (Flash/Pro)")
+        while True:
+            prov_choice = input("Auswahl (1-3) [1]: ").strip()
+            if prov_choice == "1" or prov_choice == "":
+                args.provider = "both"
+                break
+            elif prov_choice == "2":
+                args.provider = "openai"
+                break
+            elif prov_choice == "3":
+                args.provider = "gemini"
+                break
+
+        # 3. Mengenbegrenzung
+        print("\nWie viele Karteikarten sollen UNGEFÄHR insgesamt erstellt werden?")
+        print("  (Leer lassen für Maximum / keine Begrenzung)")
+        limit_input = input("Anzahl (z.B. 50): ").strip()
+        if limit_input and limit_input.isdigit():
+            args.max_cards = int(limit_input)
+
+        # 4. Audio abfragen
         print("\nSollen Audio-Erklärungen generiert werden?")
         while True:
             audio_choice = input("Audio generieren? (j/n) [n]: ").strip().lower()
@@ -176,23 +212,35 @@ Umgebungsvariablen:
     print(f"📄 Eingabe:  {pdf_path}")
     print(f"📁 Ausgabe:  {output_path}")
     print(f"{mode_emoji} Modus:    {mode_label}")
+    print(f"🤖 KI:       {args.provider.upper()}")
+    if args.max_cards:
+        print(f"📉 Limit:    ca. {args.max_cards} Karten")
     print()
     
     # LLM Clients initialisieren
     print("🔌 Initialisiere LLM Clients...")
-    try:
-        openai_client = OpenAIClient()
-        print(f"  ✓ OpenAI bereit (Modell: {openai_client.model})")
-    except ValueError as e:
-        print(f"  ✗ OpenAI: {e}")
-        sys.exit(1)
+    start_openai = args.provider in ["openai", "both"]
+    start_gemini = args.provider in ["gemini", "both"]
+
+    if start_openai:
+        try:
+            openai_client = OpenAIClient()
+            print(f"  ✓ OpenAI bereit (Modell: {openai_client.model})")
+        except ValueError as e:
+            print(f"  ✗ OpenAI: {e}")
+            sys.exit(1)
+    else:
+        openai_client = None
     
-    try:
-        gemini_client = GeminiClient()
-        print(f"  ✓ Gemini bereit (Modell: {gemini_client.model_name})")
-    except ValueError as e:
-        print(f"  ✗ Gemini: {e}")
-        sys.exit(1)
+    if start_gemini:
+        try:
+            gemini_client = GeminiClient()
+            print(f"  ✓ Gemini bereit (Modell: {gemini_client.model_name})")
+        except ValueError as e:
+            print(f"  ✗ Gemini: {e}")
+            sys.exit(1)
+    else:
+        gemini_client = None
     
     print()
     
@@ -223,6 +271,14 @@ Umgebungsvariablen:
     
     all_flashcards = []
     
+    # Limit pro Abschnitt berechnen
+    limit_per_section = None
+    if args.max_cards:
+        # Mindestens 3 Karten pro Abschnitt, aber insgesamt passend zum Limit
+        calculated_limit = max(3, args.max_cards // len(sections))
+        limit_per_section = calculated_limit
+        print(f"ℹ️  Limitierung aktiv: ca. {limit_per_section} Karten pro Abschnitt")
+
     for i, (title, content) in enumerate(sections.items(), 1):
         print(f"[{i}/{len(sections)}] Verarbeite: {title}")
         
@@ -230,7 +286,7 @@ Umgebungsvariablen:
             print("  ⏭️  Übersprungen (zu wenig Inhalt)")
             continue
         
-        cards = process_section(title, content, openai_client, gemini_client, args.mode)
+        cards = process_section(title, content, openai_client, gemini_client, args.mode, args.provider, limit_per_section)
         all_flashcards.extend(cards)
         print()
     

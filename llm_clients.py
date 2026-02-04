@@ -103,7 +103,7 @@ class LLMClient(ABC):
     """Abstrakte Basisklasse für LLM-Clients."""
     
     @abstractmethod
-    def generate_flashcards(self, section_title: str, section_content: str, mode: str = "standard") -> List[Dict[str, str]]:
+    def generate_flashcards(self, section_title: str, section_content: str, mode: str = "standard", limit: Optional[int] = None) -> List[Dict[str, str]]:
         """Generiert Karteikarten aus einem Abschnitt."""
         pass
     
@@ -163,14 +163,20 @@ class OpenAIClient(LLMClient):
         self.client = OpenAI(api_key=api_key)
         self.model = model
     
-    def generate_flashcards(self, section_title: str, section_content: str, mode: str = "standard") -> List[Dict[str, str]]:
+    def generate_flashcards(self, section_title: str, section_content: str, mode: str = "standard", limit: Optional[int] = None) -> List[Dict[str, str]]:
         """Generiert Karteikarten mit OpenAI."""
         
         system_prompt = self._get_system_prompt(mode)
         
+        if limit:
+            limit_instruction = f"WICHTIG: Erstelle MAXIMAL {limit} Karteikarten für diesen Abschnitt! Konzentriere dich auf die {limit} wichtigsten Punkte."
+        else:
+            limit_instruction = "Erstelle so viele Karteikarten wie nötig, um ALLE Informationen vollständig abzudecken."
+
         if mode == "quantitative":
             user_prompt = f"""Erstelle umfassende Karteikarten für folgenden Abschnitt.
 FOKUS: Rechnungen, Formeln, statistische Methoden und quantitative Konzepte.
+{limit_instruction}
 
 ÜBERSCHRIFT: {section_title}
 
@@ -181,13 +187,13 @@ Erstelle Karteikarten für JEDE Formel und JEDE Rechenmethode.
 Jede Karte mit Rechnung MUSS einen vollständigen Rechenweg mit konkreten Zahlen enthalten!"""
         else:
             user_prompt = f"""Erstelle umfassende Karteikarten für folgenden Abschnitt:
+{limit_instruction}
 
 ÜBERSCHRIFT: {section_title}
 
 INHALT:
 {section_content}
 
-Erstelle so viele Karteikarten wie nötig, um ALLE Informationen vollständig abzudecken.
 Jede Karte muss ein komplettes Konzept/System erklären - keine oberflächlichen Fragen!"""
         
         try:
@@ -216,7 +222,7 @@ Jede Karte muss ein komplettes Konzept/System erklären - keine oberflächlichen
 class GeminiClient(LLMClient):
     """Google Gemini API Client für Karteikarten-Generierung."""
     
-    def __init__(self, model: str = "gemini-3-pro-review"):
+    def __init__(self, model: str = "gemini-3-pro-preview"):
         api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("GOOGLE_API_KEY oder GEMINI_API_KEY Umgebungsvariable nicht gesetzt!")
@@ -224,14 +230,20 @@ class GeminiClient(LLMClient):
         self.client = genai.Client(api_key=api_key)
         self.model_name = model
     
-    def generate_flashcards(self, section_title: str, section_content: str, mode: str = "standard") -> List[Dict[str, str]]:
+    def generate_flashcards(self, section_title: str, section_content: str, mode: str = "standard", limit: Optional[int] = None) -> List[Dict[str, str]]:
         """Generiert Karteikarten mit Gemini."""
         
         system_prompt = self._get_system_prompt(mode)
         
+        if limit:
+            limit_instruction = f"WICHTIG: Erstelle MAXIMAL {limit} Karteikarten für diesen Abschnitt! Konzentriere dich auf die {limit} wichtigsten Punkte."
+        else:
+            limit_instruction = "Erstelle so viele Karteikarten wie nötig, um ALLE Informationen vollständig abzudecken."
+
         if mode == "quantitative":
             user_content = f"""Erstelle umfassende Karteikarten für folgenden Abschnitt.
 FOKUS: Rechnungen, Formeln, statistische Methoden und quantitative Konzepte.
+{limit_instruction}
 
 ÜBERSCHRIFT: {section_title}
 
@@ -242,13 +254,13 @@ Erstelle Karteikarten für JEDE Formel und JEDE Rechenmethode.
 Jede Karte mit Rechnung MUSS einen vollständigen Rechenweg mit konkreten Zahlen enthalten!"""
         else:
             user_content = f"""Erstelle umfassende Karteikarten für folgenden Abschnitt:
+{limit_instruction}
 
 ÜBERSCHRIFT: {section_title}
 
 INHALT:
 {section_content}
 
-Erstelle so viele Karteikarten wie nötig, um ALLE Informationen vollständig abzudecken.
 Jede Karte muss ein komplettes Konzept/System erklären - keine oberflächlichen Fragen!"""
         
         # System-Prompt in den User-Content integrieren (alter Stil für bessere Ergebnisse)

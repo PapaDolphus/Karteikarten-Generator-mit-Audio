@@ -26,3 +26,6 @@ stimmen_test/
 .idea/
 .vscode/
 *.swp
+
+# Video Generator
+video-generator/

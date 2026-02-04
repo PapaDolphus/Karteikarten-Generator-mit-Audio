@@ -2,7 +2,7 @@
 
 Ein intelligentes Tool, das aus PDF-Vorlesungsunterlagen (BWL, Statistik, etc.) automatisch hochwertige Anki-Karteikarten generiert – inklusive **Audio-Erklärungen**.
 
-Es nutzt **OpenAI** (GPT-4o, TTS) und **Google Gemini** (gemini-3-pro) parallel, um die besten Erklärungen zu generieren und kombiniert diese.
+Es nutzt **OpenAI** (GPT-4o, TTS) und **Google Gemini** (gemini-3-pro-preview) parallel, um die besten Erklärungen zu generieren und kombiniert diese.
 
 ## Features
 
@@ -11,7 +11,9 @@ Es nutzt **OpenAI** (GPT-4o, TTS) und **Google Gemini** (gemini-3-pro) parallel,
   - `Standard`: Für Konzepte, Modelle und Theorien.
   - `Quantitativ`: Für Formeln, Rechnungen und Statistik (mit Rechenwegen!). (Nicht für Audiozusammenfassungen geeignet)
 - **🎧 Audio-Erklärungen**: Generiert natürliche, podcast-artige Erklärungen zu jeder Karte (TTS).
-- **🎛️ Interaktive CLI**: Einfache Bedienung ohne komplexe Befehle.
+- **🎛️ KI-Kontrolle**: Wähle flexibel zwischen OpenAI, Gemini oder beiden – und begrenze die Kartenanzahl.
+- **⏯️ Resume-Funktion**: Audio-Generierung kann jederzeit abgebrochen und fortgesetzt werden.
+- **🖥️ Interaktive CLI**: Einfache Bedienung ohne komplexe Befehle.
 - **🔄 Anki-Import**: Exportiert direkt als TSV für den Import in Anki (HTML-formatiert).
 
 ## Installation
@@ -55,6 +57,22 @@ python3 main.py statistik.pdf --mode quantitative
 
 # Mit Audio
 python3 main.py vorlesung.pdf --audio --voice nova
+
+# KI-Auswahl & Limitierung
+python3 main.py vorlesung.pdf --provider openai --max-cards 50
+python3 main.py vorlesung.pdf --provider gemini
+```
+
+### Audio-Generator Tools
+
+Falls du schon Karteikarten (TSV) hast und nur Audio generieren möchtest:
+
+```bash
+# Audios erstellen
+python3 audio_generator.py karten.tsv --voice nova
+
+# Fortsetzen nach Abbruch (Resume)
+python3 audio_generator.py karten.tsv --start 51
 ```
 
 ## Voraussetzungen

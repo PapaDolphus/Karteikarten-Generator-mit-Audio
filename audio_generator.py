@@ -153,7 +153,8 @@ Erstelle daraus einen natürlich klingenden Erklärungstext."""
     
     def process_flashcards(self, flashcards: List[Dict[str, str]], 
                            output_dir: str, 
-                           prefix: str = "karte") -> int:
+                           prefix: str = "karte",
+                           start_index: int = 1) -> int:
         """
         Verarbeitet eine Liste von Karteikarten zu Audio-Dateien.
         
@@ -161,6 +162,7 @@ Erstelle daraus einen natürlich klingenden Erklärungstext."""
             flashcards: Liste von Dictionaries mit 'frage' und 'antwort' Keys
             output_dir: Verzeichnis für die Audio-Dateien
             prefix: Präfix für Dateinamen
+            start_index: Nummer für Dateinamen-Zählung (Standard: 1)
             
         Returns:
             Anzahl erfolgreich generierter Audio-Dateien
@@ -171,7 +173,7 @@ Erstelle daraus einen natürlich klingenden Erklärungstext."""
         successful = 0
         total = len(flashcards)
         
-        for i, card in enumerate(flashcards, 1):
+        for i, card in enumerate(flashcards, start_index):
             frage = card.get('frage', '')
             antwort = card.get('antwort', '')
             
@@ -250,6 +252,10 @@ Beispiele:
                         choices=["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
                         default="nova",
                         help="TTS-Stimme (Standard: nova)")
+    parser.add_argument("--start", type=int, default=1,
+                        help="Start-Index (bei Abbruch z.B. ab Karte 50 starten)")
+    parser.add_argument("--end", type=int, default=None,
+                        help="End-Index (optional, z.B. bis Karte 100)")
     
     args = parser.parse_args()
     
@@ -259,15 +265,29 @@ Beispiele:
     if args.tsv:
         # TSV-Datei verarbeiten
         print(f"📄 Lade Karteikarten aus: {args.tsv}")
-        flashcards = load_flashcards_from_tsv(args.tsv)
-        print(f"  ✓ {len(flashcards)} Karteikarten geladen")
+        all_flashcards = load_flashcards_from_tsv(args.tsv)
+        print(f"  ✓ {len(all_flashcards)} Karteikarten geladen")
+        
+        # Bereich filtern
+        start = max(1, args.start)
+        end = args.end if args.end else len(all_flashcards)
+        
+        # Python Slicing ist 0-basiert, User Input ist 1-basiert
+        flashcards = all_flashcards[start-1:end]
+        
+        if not flashcards:
+            print(f"⚠️  Keine Karten im Bereich {start}-{end} gefunden!")
+            exit(1)
+            
+        print(f"🔍 Verarbeite Karten {start} bis {end} ({len(flashcards)} Stück)")
         
         print(f"\n🎙️ Stimme: {args.voice}")
         print(f"📁 Ausgabe: {args.output}\n")
         
         try:
             generator = AudioGenerator(voice=args.voice)
-            count = generator.process_flashcards(flashcards, args.output)
+            # start_index übergeben, damit Dateinamen korrekt weiterlaufen (karte_050...)
+            count = generator.process_flashcards(flashcards, args.output, start_index=start)
             print(f"\n✅ {count} Audio-Dateien erfolgreich generiert!")
         except ValueError as e:
             print(f"❌ Fehler: {e}")
