@@ -18,7 +18,7 @@ echo ""
 
 # Installiere Abhängigkeiten mit --user flag
 echo "📦 Installiere Abhängigkeiten..."
-python3 -m pip install --user pymupdf openai google-generativeai python-dotenv
+python3 -m pip install --user -r requirements.txt
 
 if [ $? -eq 0 ]; then
     echo ""

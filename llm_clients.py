@@ -113,6 +113,36 @@ class LLMClient(ABC):
             return QUANTITATIVE_SYSTEM_PROMPT
         return FLASHCARD_SYSTEM_PROMPT
     
+    def _build_user_prompt(self, section_title: str, section_content: str, mode: str, limit: Optional[int] = None) -> str:
+        """Erstellt den User-Prompt basierend auf Modus und Limit."""
+        if limit:
+            limit_instruction = f"WICHTIG: Erstelle MAXIMAL {limit} Karteikarten für diesen Abschnitt! Konzentriere dich auf die {limit} wichtigsten Punkte."
+        else:
+            limit_instruction = "Erstelle so viele Karteikarten wie nötig, um ALLE Informationen vollständig abzudecken."
+
+        if mode == "quantitative":
+            return f"""Erstelle umfassende Karteikarten für folgenden Abschnitt.
+FOKUS: Rechnungen, Formeln, statistische Methoden und quantitative Konzepte.
+{limit_instruction}
+
+ÜBERSCHRIFT: {section_title}
+
+INHALT:
+{section_content}
+
+Erstelle Karteikarten für JEDE Formel und JEDE Rechenmethode.
+Jede Karte mit Rechnung MUSS einen vollständigen Rechenweg mit konkreten Zahlen enthalten!"""
+        else:
+            return f"""Erstelle umfassende Karteikarten für folgenden Abschnitt:
+{limit_instruction}
+
+ÜBERSCHRIFT: {section_title}
+
+INHALT:
+{section_content}
+
+Jede Karte muss ein komplettes Konzept/System erklären - keine oberflächlichen Fragen!"""
+    
     def _parse_response(self, response_text: str) -> List[Dict[str, str]]:
         """Parst die JSON-Antwort des LLMs."""
         # Entferne führende/nachfolgende Whitespaces
@@ -167,34 +197,7 @@ class OpenAIClient(LLMClient):
         """Generiert Karteikarten mit OpenAI."""
         
         system_prompt = self._get_system_prompt(mode)
-        
-        if limit:
-            limit_instruction = f"WICHTIG: Erstelle MAXIMAL {limit} Karteikarten für diesen Abschnitt! Konzentriere dich auf die {limit} wichtigsten Punkte."
-        else:
-            limit_instruction = "Erstelle so viele Karteikarten wie nötig, um ALLE Informationen vollständig abzudecken."
-
-        if mode == "quantitative":
-            user_prompt = f"""Erstelle umfassende Karteikarten für folgenden Abschnitt.
-FOKUS: Rechnungen, Formeln, statistische Methoden und quantitative Konzepte.
-{limit_instruction}
-
-ÜBERSCHRIFT: {section_title}
-
-INHALT:
-{section_content}
-
-Erstelle Karteikarten für JEDE Formel und JEDE Rechenmethode.
-Jede Karte mit Rechnung MUSS einen vollständigen Rechenweg mit konkreten Zahlen enthalten!"""
-        else:
-            user_prompt = f"""Erstelle umfassende Karteikarten für folgenden Abschnitt:
-{limit_instruction}
-
-ÜBERSCHRIFT: {section_title}
-
-INHALT:
-{section_content}
-
-Jede Karte muss ein komplettes Konzept/System erklären - keine oberflächlichen Fragen!"""
+        user_prompt = self._build_user_prompt(section_title, section_content, mode, limit)
         
         try:
             response = self.client.chat.completions.create(
@@ -234,34 +237,7 @@ class GeminiClient(LLMClient):
         """Generiert Karteikarten mit Gemini."""
         
         system_prompt = self._get_system_prompt(mode)
-        
-        if limit:
-            limit_instruction = f"WICHTIG: Erstelle MAXIMAL {limit} Karteikarten für diesen Abschnitt! Konzentriere dich auf die {limit} wichtigsten Punkte."
-        else:
-            limit_instruction = "Erstelle so viele Karteikarten wie nötig, um ALLE Informationen vollständig abzudecken."
-
-        if mode == "quantitative":
-            user_content = f"""Erstelle umfassende Karteikarten für folgenden Abschnitt.
-FOKUS: Rechnungen, Formeln, statistische Methoden und quantitative Konzepte.
-{limit_instruction}
-
-ÜBERSCHRIFT: {section_title}
-
-INHALT:
-{section_content}
-
-Erstelle Karteikarten für JEDE Formel und JEDE Rechenmethode.
-Jede Karte mit Rechnung MUSS einen vollständigen Rechenweg mit konkreten Zahlen enthalten!"""
-        else:
-            user_content = f"""Erstelle umfassende Karteikarten für folgenden Abschnitt:
-{limit_instruction}
-
-ÜBERSCHRIFT: {section_title}
-
-INHALT:
-{section_content}
-
-Jede Karte muss ein komplettes Konzept/System erklären - keine oberflächlichen Fragen!"""
+        user_content = self._build_user_prompt(section_title, section_content, mode, limit)
         
         # System-Prompt in den User-Content integrieren (alter Stil für bessere Ergebnisse)
         full_content = f"{system_prompt}\n\n---\n\n{user_content}"
