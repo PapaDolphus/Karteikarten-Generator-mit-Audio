@@ -1,3 +1,4 @@
+import csv
 import os
 import json
 import argparse
@@ -48,7 +49,7 @@ class VideoPipeline:
         
         for line in lines:
             # Check for list markers
-            if line[0].isdigit() and line[1] in ['.', ')']:
+            if len(line) >= 2 and line[0].isdigit() and line[1] in ['.', ')']:
                 items.append(line)
             elif line.startswith(('-', '•')):
                 items.append(line)
@@ -82,7 +83,7 @@ class VideoPipeline:
             # 1. Extract keyword (simple heuristic: first long word)
             # Remove numbering "1. ", "a) "
             clean_item = item
-            if item[0].isdigit():
+            if item and item[0].isdigit():
                 parts = item.split(" ", 1)
                 if len(parts) > 1:
                     clean_item = parts[1]
@@ -152,7 +153,6 @@ class VideoPipeline:
                 raise Exception("Audio generation failed")
                 
         # Get duration for frames (30fps)
-        from mutagen.mp3 import MP3
         audio = MP3(audio_path)
         duration_sec = audio.info.length
         duration_frames = int(duration_sec * 30) + 90 # Add 3 sec buffer
@@ -193,8 +193,6 @@ class VideoPipeline:
         Generates a single JSON file containing data for ALL cards in the TSV.
         Matches TSV rows to '{prefix}_XXX' audio files.
         """
-        import csv
-        
         compilation_cards = []
         
         # 1. Read TSV
@@ -268,7 +266,6 @@ class VideoPipeline:
             
             try:
                 # Transcribe & Align
-                from mutagen.mp3 import MP3
                 audio = MP3(audio_path)
                 duration_sec = audio.info.length
                 duration_frames = int(duration_sec * 30) + 60

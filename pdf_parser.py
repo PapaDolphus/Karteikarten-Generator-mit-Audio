@@ -24,50 +24,43 @@ def extract_sections_from_pdf(pdf_path: str) -> Dict[str, str]:
     Returns:
         Dictionary mit Überschriften als Keys und Abschnittsinhalten als Values
     """
-    doc = fitz.open(pdf_path)
-    sections = {}
-    
-    all_content = []
-    underlined_positions = []
-    
-    for page_num, page in enumerate(doc):
-        # Text mit Position extrahieren
-        blocks = page.get_text("dict")["blocks"]
+    with fitz.open(pdf_path) as doc:
+        all_content = []
         
-        for block in blocks:
-            if "lines" not in block:
-                continue
-                
-            for line in block["lines"]:
-                for span in line["spans"]:
-                    text = span["text"].strip()
-                    if not text:
-                        continue
+        for page_num, page in enumerate(doc):
+            # Text mit Position extrahieren
+            blocks = page.get_text("dict")["blocks"]
+            
+            for block in blocks:
+                if "lines" not in block:
+                    continue
                     
-                    # Prüfen ob Text unterstrichen ist
-                    # PyMuPDF: flags & 2^0 = superscript, 2^1 = italic, 2^2 = serifed, 
-                    # 2^3 = monospaced, 2^4 = bold
-                    # Unterstreichung wird über Annotationen oder Linien erkannt
-                    flags = span.get("flags", 0)
-                    bbox = span["bbox"]
-                    
-                    is_underlined = _check_underline(page, bbox)
-                    
-                    all_content.append({
-                        "text": text,
-                        "page": page_num,
-                        "bbox": bbox,
-                        "is_underlined": is_underlined,
-                        "is_bold": bool(flags & 16),
-                        "font_size": span.get("size", 12)
-                    })
-    
-    doc.close()
+                for line in block["lines"]:
+                    for span in line["spans"]:
+                        text = span["text"].strip()
+                        if not text:
+                            continue
+                        
+                        # Prüfen ob Text unterstrichen ist
+                        # PyMuPDF: flags & 2^0 = superscript, 2^1 = italic, 2^2 = serifed, 
+                        # 2^3 = monospaced, 2^4 = bold
+                        # Unterstreichung wird über Annotationen oder Linien erkannt
+                        flags = span.get("flags", 0)
+                        bbox = span["bbox"]
+                        
+                        is_underlined = _check_underline(page, bbox)
+                        
+                        all_content.append({
+                            "text": text,
+                            "page": page_num,
+                            "bbox": bbox,
+                            "is_underlined": is_underlined,
+                            "is_bold": bool(flags & 16),
+                            "font_size": span.get("size", 12)
+                        })
     
     # Abschnitte basierend auf unterstrichenen Überschriften erstellen
-    sections = _build_sections(all_content)
-    
-    return sections
+    return _build_sections(all_content)
 
 
 def _check_underline(page, text_bbox: Tuple[float, float, float, float]) -> bool:
@@ -163,13 +156,12 @@ def extract_text_only(pdf_path: str) -> str:
     Returns:
         Gesamter Text als String
     """
-    doc = fitz.open(pdf_path)
-    text = ""
+    with fitz.open(pdf_path) as doc:
+        text = ""
+        
+        for page in doc:
+            text += page.get_text() + "\n\n"
     
-    for page in doc:
-        text += page.get_text() + "\n\n"
-    
-    doc.close()
     return text.strip()
 
 
